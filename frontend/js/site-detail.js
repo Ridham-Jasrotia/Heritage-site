@@ -1,10 +1,13 @@
 /**
  * site-detail.js — Site Detail page logic.
- * Reads ?id= from the URL; loads site info, maintenance, visitor records.
- * Also handles Edit (PATCH /api/sites/{id}) and Delete (DELETE /api/sites/{id}).
+ * Reads ?id= from the URL; loads site info, monument image, maintenance, visitor records.
+ * Handles Edit (PATCH /api/sites/{id}) and Delete (DELETE /api/sites/{id}).
  */
 
 import { sitesApi, maintenanceApi, visitorsApi, showToast } from "./api.js";
+import { initAuthGuard } from "./auth.js";
+
+const DEFAULT_MONUMENT_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Taj_Mahal_%28Edited%29.jpeg/1200px-Taj_Mahal_%28Edited%29.jpeg";
 
 const STATUS_BADGE = {
   "Pending":     "badge-warning",
@@ -12,27 +15,45 @@ const STATUS_BADGE = {
   "Completed":   "badge-success",
 };
 
-// ---------------------------------------------------------------------------
-// Get the site ID from the URL once
-// ---------------------------------------------------------------------------
 const SITE_ID = new URLSearchParams(window.location.search).get("id");
 
-// ---------------------------------------------------------------------------
-// Render site info into the read-only display fields (unchanged from original)
-// ---------------------------------------------------------------------------
+/**
+ * Render site info into display fields
+ */
 function renderSiteInfo(site) {
   document.title = `${site.name} | HeritageMS`;
   document.getElementById("detail-name").textContent        = site.name;
   document.getElementById("detail-location").textContent    = site.location;
   document.getElementById("detail-category").textContent    = site.category;
-  document.getElementById("detail-description").textContent = site.description || "No description provided.";
+  document.getElementById("detail-description").textContent = site.description || "No detailed description provided.";
   document.getElementById("detail-year").textContent        = site.year_established ?? "—";
   document.getElementById("detail-significance").textContent = site.significance || "—";
+
+  // Hero Image & Badge
+  const heroImg   = document.getElementById("detail-hero-img");
+  const heroBadge = document.getElementById("detail-hero-badge");
+  if (heroImg) {
+    heroImg.src = site.image_url || DEFAULT_MONUMENT_IMAGE;
+    heroImg.onerror = () => { heroImg.src = DEFAULT_MONUMENT_IMAGE; };
+  }
+  if (heroBadge) {
+    heroBadge.textContent = site.category;
+  }
+
+  // Coordinates
+  const coordsEl = document.getElementById("detail-coordinates");
+  if (coordsEl) {
+    if (site.latitude != null && site.longitude != null) {
+      coordsEl.textContent = `${site.latitude}° N, ${site.longitude}° E`;
+    } else {
+      coordsEl.textContent = "—";
+    }
+  }
 }
 
-// ---------------------------------------------------------------------------
-// Populate the edit form with the site's current values
-// ---------------------------------------------------------------------------
+/**
+ * Populate edit form
+ */
 function populateEditForm(site) {
   const f = document.getElementById("edit-site-form");
   f.name.value             = site.name              ?? "";
@@ -44,13 +65,11 @@ function populateEditForm(site) {
   f.description.value      = site.description       ?? "";
   f.significance.value     = site.significance      ?? "";
 
-  // Category select — set the matching option
   const catSelect = document.getElementById("e-category");
   const opt = [...catSelect.options].find(o => o.value === site.category);
   if (opt) {
     catSelect.value = site.category;
   } else {
-    // Site has a category not in the list — add it so the value is preserved
     const extra = document.createElement("option");
     extra.value = site.category;
     extra.textContent = site.category;
@@ -59,12 +78,12 @@ function populateEditForm(site) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Load all site data (original logic preserved)
-// ---------------------------------------------------------------------------
+/**
+ * Load all site details and related records
+ */
 async function loadSiteDetail() {
   if (!SITE_ID) {
-    showToast("No site ID provided.", "error");
+    showToast("No site ID specified in URL.", "error");
     return;
   }
 
@@ -86,7 +105,13 @@ async function loadSiteDetail() {
       maintenance.forEach((rec, i) => {
         const badge = STATUS_BADGE[rec.status] || "badge-info";
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i+1}</td><td>${rec.title}</td><td><span class="badge ${badge}">${rec.status}</span></td><td>${rec.priority}</td><td>${rec.scheduled_date ?? "—"}</td>`;
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td><strong>${rec.title}</strong></td>
+          <td><span class="badge ${badge}">${rec.status}</span></td>
+          <td>${rec.priority}</td>
+          <td>${rec.scheduled_date ?? "—"}</td>
+        `;
         mtbody.appendChild(tr);
       });
     }
@@ -99,36 +124,41 @@ async function loadSiteDetail() {
     } else {
       visitors.forEach((rec, i) => {
         const tr = document.createElement("tr");
-        tr.innerHTML = `<td>${i+1}</td><td>${rec.visit_date}</td><td>${rec.visitor_count.toLocaleString()}</td><td>${rec.visitor_type ?? "—"}</td>`;
+        tr.innerHTML = `
+          <td>${i+1}</td>
+          <td>${rec.visit_date}</td>
+          <td><strong>${rec.visitor_count.toLocaleString()}</strong></td>
+          <td>${rec.visitor_type ?? "—"}</td>
+        `;
         vtbody.appendChild(tr);
       });
     }
 
-    return site; // return for use by edit init
+    return site;
   } catch (err) {
-    showToast(`Failed to load site details: ${err.message}`, "error");
+    if (!err.message.includes("Session expired")) {
+      showToast(`Failed to load site details: ${err.message}`, "error");
+    }
     console.error(err);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Edit functionality
-// ---------------------------------------------------------------------------
+/**
+ * Edit form initialization
+ */
 function initEdit(site) {
-  const editBtn    = document.getElementById("btn-edit-site");
-  const cancelBtn  = document.getElementById("btn-cancel-edit");
-  const formPanel  = document.getElementById("edit-form-panel");
-  const form       = document.getElementById("edit-site-form");
-  const submitBtn  = document.getElementById("e-submit-btn");
+  const editBtn   = document.getElementById("btn-edit-site");
+  const cancelBtn = document.getElementById("btn-cancel-edit");
+  const formPanel = document.getElementById("edit-form-panel");
+  const form      = document.getElementById("edit-site-form");
+  const submitBtn = document.getElementById("e-submit-btn");
 
-  // Keep a reference to the current site data so we can re-open the form
-  // after a failed save without losing the user's edits
   let currentSite = site;
 
   function openEditForm() {
     populateEditForm(currentSite);
     formPanel.style.display = "block";
-    editBtn.textContent = "Close";
+    editBtn.textContent = "Close Form";
     formPanel.scrollIntoView({ behavior: "smooth", block: "nearest" });
   }
 
@@ -148,7 +178,6 @@ function initEdit(site) {
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
 
-    // Validate required fields (name, location, category are required in the schema)
     const name     = form.name.value.trim();
     const location = form.location.value.trim();
     const category = form.category.value;
@@ -160,8 +189,6 @@ function initEdit(site) {
     submitBtn.disabled = true;
     submitBtn.textContent = "Saving…";
 
-    // Build PATCH payload — exact HeritageSiteUpdate field names
-    // Only send non-empty optional fields; send null to clear them
     const yearRaw = form.year_established.value;
     const latRaw  = form.latitude.value;
     const lonRaw  = form.longitude.value;
@@ -180,10 +207,10 @@ function initEdit(site) {
 
     try {
       const updated = await sitesApi.update(SITE_ID, payload);
-      currentSite = updated;           // keep our reference fresh
-      renderSiteInfo(updated);         // refresh displayed info immediately
+      currentSite = updated;
+      renderSiteInfo(updated);
       closeEditForm();
-      showToast("Site updated successfully!", "success");
+      showToast("Site details updated successfully!", "success");
     } catch (err) {
       showToast(`Update failed: ${err.message}`, "error");
     } finally {
@@ -193,15 +220,15 @@ function initEdit(site) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Delete functionality
-// ---------------------------------------------------------------------------
+/**
+ * Delete confirmation modal setup
+ */
 function initDelete(siteName) {
-  const deleteBtn     = document.getElementById("btn-delete-site");
-  const modal         = document.getElementById("delete-modal");
-  const confirmBtn    = document.getElementById("btn-confirm-delete");
-  const cancelDelBtn  = document.getElementById("btn-cancel-delete");
-  const modalMsg      = document.getElementById("delete-modal-msg");
+  const deleteBtn    = document.getElementById("btn-delete-site");
+  const modal        = document.getElementById("delete-modal");
+  const confirmBtn   = document.getElementById("btn-confirm-delete");
+  const cancelDelBtn = document.getElementById("btn-cancel-delete");
+  const modalMsg     = document.getElementById("delete-modal-msg");
 
   function openModal() {
     modalMsg.textContent = `"${siteName}" will be permanently deleted. This action cannot be undone.`;
@@ -215,7 +242,6 @@ function initDelete(siteName) {
   deleteBtn.addEventListener("click", openModal);
   cancelDelBtn.addEventListener("click", closeModal);
 
-  // Close modal if user clicks the dark overlay (outside the box)
   modal.addEventListener("click", (e) => {
     if (e.target === modal) closeModal();
   });
@@ -227,10 +253,9 @@ function initDelete(siteName) {
     try {
       await sitesApi.remove(SITE_ID);
       showToast(`"${siteName}" deleted successfully.`, "success");
-      // Redirect to sites list after short delay so toast is readable
       setTimeout(() => {
         window.location.href = "sites.html";
-      }, 1200);
+      }, 1000);
     } catch (err) {
       showToast(`Delete failed: ${err.message}`, "error");
       confirmBtn.disabled = false;
@@ -240,10 +265,8 @@ function initDelete(siteName) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", async () => {
+  initAuthGuard();
   const site = await loadSiteDetail();
   if (site) {
     initEdit(site);

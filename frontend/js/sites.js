@@ -1,42 +1,55 @@
 /**
  * sites.js — Heritage Sites listing page logic.
- * Fetches all sites once on load, then filters client-side on every
- * search/filter change — zero extra API requests.
+ * Client-side search and category filtering with monument images.
  */
 
 import { sitesApi, showToast } from "./api.js";
+import { initAuthGuard } from "./auth.js";
 
-// ---------------------------------------------------------------------------
-// Module-level cache — all sites loaded from the API
-// ---------------------------------------------------------------------------
+const DEFAULT_MONUMENT_IMAGE = "https://upload.wikimedia.org/wikipedia/commons/thumb/1/1d/Taj_Mahal_%28Edited%29.jpeg/1200px-Taj_Mahal_%28Edited%29.jpeg";
+
 let allSites = [];
 
-// ---------------------------------------------------------------------------
-// Build a single site card element (unchanged card structure from original)
-// ---------------------------------------------------------------------------
+/**
+ * Build a single site card element with image, details and action
+ */
 function buildCard(site) {
   const card = document.createElement("div");
   card.className = "site-card";
+  const imgUrl = site.image_url || DEFAULT_MONUMENT_IMAGE;
+  const descriptionSnippet = site.description
+    ? (site.description.length > 110 ? site.description.substring(0, 110) + "…" : site.description)
+    : "No description available.";
+
   card.innerHTML = `
+    <div class="site-card-img-wrap">
+      <img src="${imgUrl}" alt="${site.name}" loading="lazy" onerror="this.onerror=null;this.src='${DEFAULT_MONUMENT_IMAGE}';" />
+      <span class="site-card-badge">${site.category}</span>
+    </div>
     <div class="site-card-body">
-      <p class="site-card-meta">${site.category}</p>
       <h3 class="site-card-title">${site.name}</h3>
-      <p class="site-card-meta">${site.location}</p>
-      <div style="margin-top:12px;display:flex;gap:8px;">
-        <a href="site-detail.html?id=${site.id}" class="btn btn-primary"
-           style="font-size:0.8rem;padding:6px 12px;">View Details</a>
+      <p class="site-card-location">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"></path>
+          <circle cx="12" cy="10" r="3"></circle>
+        </svg>
+        <span>${site.location}</span>
+      </p>
+      <p class="site-card-description">${descriptionSnippet}</p>
+      <div class="site-card-footer">
+        <a href="site-detail.html?id=${site.id}" class="btn btn-primary site-card-btn">View Details</a>
       </div>
     </div>
   `;
   return card;
 }
 
-// ---------------------------------------------------------------------------
-// Render the filtered subset into the grid
-// ---------------------------------------------------------------------------
+/**
+ * Render filtered subset into grid
+ */
 function renderGrid(sites) {
-  const grid      = document.getElementById("sites-grid");
-  const countEl   = document.getElementById("sites-results-count");
+  const grid    = document.getElementById("sites-grid");
+  const countEl = document.getElementById("sites-results-count");
 
   grid.innerHTML = "";
 
@@ -44,12 +57,17 @@ function renderGrid(sites) {
     const empty = document.createElement("div");
     empty.className = "sites-empty-state";
     empty.innerHTML = `
-      <p style="font-size:2rem;margin-bottom:8px;">🔍</p>
-      <p>No heritage sites found.</p>
-      <p style="margin-top:4px;font-size:0.8rem;">Try adjusting your search or filters.</p>
+      <div class="empty-icon-wrap">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"></circle>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+        </svg>
+      </div>
+      <p style="font-weight:600;font-size:1.05rem;color:var(--color-text);margin-bottom:4px;">No heritage sites found</p>
+      <p style="font-size:0.85rem;color:var(--color-text-muted);">Try adjusting your search criteria or filter options.</p>
     `;
     grid.appendChild(empty);
-    countEl.textContent = "No results";
+    countEl.textContent = "No matching sites";
     return;
   }
 
@@ -57,14 +75,13 @@ function renderGrid(sites) {
   countEl.textContent = `Showing ${sites.length} of ${allSites.length} site${allSites.length !== 1 ? "s" : ""}`;
 }
 
-// ---------------------------------------------------------------------------
-// Populate category dropdown from actual data (deduped, sorted)
-// ---------------------------------------------------------------------------
+/**
+ * Populate category dropdown from actual dataset
+ */
 function populateCategoryFilter(sites) {
   const select = document.getElementById("site-category-filter");
   const categories = [...new Set(sites.map(s => s.category).filter(Boolean))].sort();
 
-  // Keep "All Categories" first option
   select.innerHTML = '<option value="">All Categories</option>';
   categories.forEach(cat => {
     const opt = document.createElement("option");
@@ -74,9 +91,9 @@ function populateCategoryFilter(sites) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Apply current search + category filter values against allSites
-// ---------------------------------------------------------------------------
+/**
+ * Apply active search and category filters
+ */
 function applyFilters() {
   const query    = document.getElementById("site-search").value.trim().toLowerCase();
   const category = document.getElementById("site-category-filter").value;
@@ -86,66 +103,61 @@ function applyFilters() {
   clearBtn.style.display = isActive ? "inline-flex" : "none";
 
   const filtered = allSites.filter(site => {
-    // Category filter (exact match)
     if (category && site.category !== category) return false;
-
-    // Text search — match name, location, or category (case-insensitive)
     if (query) {
-      const haystack = [site.name, site.location, site.category]
+      const haystack = [site.name, site.location, site.category, site.description]
         .map(v => (v ?? "").toLowerCase())
         .join(" ");
       if (!haystack.includes(query)) return false;
     }
-
     return true;
   });
 
   renderGrid(filtered);
 }
 
-// ---------------------------------------------------------------------------
-// Load all sites from API once, then wire up filters
-// ---------------------------------------------------------------------------
+/**
+ * Main initialization
+ */
 async function loadSites() {
+  initAuthGuard();
+
   const grid = document.getElementById("sites-grid");
-  grid.innerHTML = '<p class="loading-cell">Loading…</p>';
+  grid.innerHTML = '<p class="loading-cell">Loading heritage sites…</p>';
 
   try {
     allSites = await sitesApi.getAll();
 
     if (allSites.length === 0) {
-      grid.innerHTML = '<p class="loading-cell">No heritage sites yet. <a href="add-site.html">Add the first one →</a></p>';
+      grid.innerHTML = '<p class="loading-cell">No heritage sites available. <a href="add-site.html">Add New Site</a></p>';
       document.getElementById("sites-results-count").textContent = "";
       return;
     }
 
     populateCategoryFilter(allSites);
-    renderGrid(allSites);   // show all by default
+    renderGrid(allSites);
 
-    // Wire up filter controls
-    const searchInput  = document.getElementById("site-search");
-    const categorySel  = document.getElementById("site-category-filter");
-    const clearBtn     = document.getElementById("site-filter-clear");
+    const searchInput = document.getElementById("site-search");
+    const categorySel = document.getElementById("site-category-filter");
+    const clearBtn    = document.getElementById("site-filter-clear");
 
     searchInput.addEventListener("input",  applyFilters);
     categorySel.addEventListener("change", applyFilters);
 
     clearBtn.addEventListener("click", () => {
-      searchInput.value  = "";
-      categorySel.value  = "";
+      searchInput.value = "";
+      categorySel.value = "";
       clearBtn.style.display = "none";
       renderGrid(allSites);
-      document.getElementById("sites-results-count").textContent = "";
     });
 
   } catch (err) {
-    showToast("Failed to load sites.", "error");
+    if (!err.message.includes("Session expired")) {
+      showToast("Failed to load sites.", "error");
+    }
     grid.innerHTML = '<p class="loading-cell">Failed to load sites.</p>';
     console.error(err);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", loadSites);

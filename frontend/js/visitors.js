@@ -4,10 +4,8 @@
  */
 
 import { visitorsApi, sitesApi, showToast } from "./api.js";
+import { initAuthGuard } from "./auth.js";
 
-// ---------------------------------------------------------------------------
-// Table loader + total counter — now renders Edit + Delete buttons per row
-// ---------------------------------------------------------------------------
 async function loadVisitors() {
   const tbody = document.getElementById("visitors-body");
   try {
@@ -24,13 +22,12 @@ async function loadVisitors() {
     records.forEach(rec => {
       totalVisitors += rec.visitor_count;
       const tr = document.createElement("tr");
-      // Store the full record on the row so edit/delete handlers can read it
       tr.dataset.record = JSON.stringify(rec);
       tr.innerHTML = `
         <td>${rec.id}</td>
-        <td>${rec.site_id}</td>
+        <td>Site #${rec.site_id}</td>
         <td>${rec.visit_date}</td>
-        <td>${rec.visitor_count.toLocaleString()}</td>
+        <td><strong>${rec.visitor_count.toLocaleString()}</strong></td>
         <td>${rec.visitor_type ?? "—"}</td>
         <td style="white-space:nowrap;">
           <button class="btn btn-outline btn-edit-v"   data-id="${rec.id}"
@@ -44,7 +41,9 @@ async function loadVisitors() {
 
     updateTotal(totalVisitors);
   } catch (err) {
-    showToast("Failed to load visitor records.", "error");
+    if (!err.message.includes("Session expired")) {
+      showToast("Failed to load visitor records.", "error");
+    }
     console.error(err);
   }
 }
@@ -54,9 +53,6 @@ function updateTotal(value) {
   if (totalEl) totalEl.textContent = value.toLocaleString();
 }
 
-// ---------------------------------------------------------------------------
-// Populate Heritage Site dropdown (used by Add form)
-// ---------------------------------------------------------------------------
 async function populateSiteDropdown(selectId) {
   const select = document.getElementById(selectId);
   try {
@@ -65,7 +61,7 @@ async function populateSiteDropdown(selectId) {
     sites.forEach(site => {
       const opt = document.createElement("option");
       opt.value = site.id;
-      opt.textContent = site.name;
+      opt.textContent = `${site.name} (${site.location})`;
       select.appendChild(opt);
     });
   } catch (err) {
@@ -74,9 +70,6 @@ async function populateSiteDropdown(selectId) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Add form toggle (unchanged)
-// ---------------------------------------------------------------------------
 function initToggle() {
   const toggleBtn = document.getElementById("btn-toggle-visitor-form");
   const cancelBtn = document.getElementById("btn-cancel-visitor");
@@ -102,9 +95,6 @@ function initToggle() {
   cancelBtn.addEventListener("click", closeForm);
 }
 
-// ---------------------------------------------------------------------------
-// Add form submission (unchanged)
-// ---------------------------------------------------------------------------
 function initForm() {
   const form = document.getElementById("add-visitor-form");
 
@@ -139,7 +129,9 @@ function initForm() {
       document.getElementById("btn-toggle-visitor-form").textContent = "Add Visitor Record";
       await loadVisitors();
     } catch (err) {
-      showToast(`Error: ${err.message}`, "error");
+      if (!err.message.includes("Session expired")) {
+        showToast(`Error: ${err.message}`, "error");
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Save Record";
@@ -147,9 +139,6 @@ function initForm() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Edit modal — uses exact VisitorUpdate field names
-// ---------------------------------------------------------------------------
 function initEditModal() {
   const modal     = document.getElementById("v-edit-modal");
   const form      = document.getElementById("edit-visitor-form");
@@ -159,7 +148,6 @@ function initEditModal() {
 
   function openModal(rec) {
     activeId = rec.id;
-    // Populate with current values — VisitorUpdate fields only
     form.visit_date.value    = rec.visit_date    ?? "";
     form.visitor_count.value = rec.visitor_count ?? "";
     form.visitor_type.value  = rec.visitor_type  ?? "";
@@ -188,7 +176,6 @@ function initEditModal() {
     submitBtn.disabled = true;
     submitBtn.textContent = "Saving…";
 
-    // Build PATCH payload using exact VisitorUpdate field names
     const payload = {
       visit_date:    form.visit_date.value    || null,
       visitor_count: parseInt(countRaw),
@@ -200,7 +187,7 @@ function initEditModal() {
       await visitorsApi.update(activeId, payload);
       showToast("Visitor record updated!", "success");
       closeModal();
-      await loadVisitors();           // refreshes table + total
+      await loadVisitors();
     } catch (err) {
       showToast(`Update failed: ${err.message}`, "error");
     } finally {
@@ -212,9 +199,6 @@ function initEditModal() {
   return openModal;
 }
 
-// ---------------------------------------------------------------------------
-// Delete modal
-// ---------------------------------------------------------------------------
 function initDeleteModal() {
   const modal      = document.getElementById("v-delete-modal");
   const msgEl      = document.getElementById("v-delete-modal-msg");
@@ -244,7 +228,7 @@ function initDeleteModal() {
       await visitorsApi.remove(activeId);
       showToast("Visitor record deleted.", "success");
       closeModal();
-      await loadVisitors();           // refreshes table + recalculates total
+      await loadVisitors();
     } catch (err) {
       showToast(`Delete failed: ${err.message}`, "error");
     } finally {
@@ -256,9 +240,6 @@ function initDeleteModal() {
   return openModal;
 }
 
-// ---------------------------------------------------------------------------
-// Wire edit/delete button clicks via event delegation on tbody
-// ---------------------------------------------------------------------------
 function initTableActions(openEditModal, openDeleteModal) {
   const tbody = document.getElementById("visitors-body");
 
@@ -280,10 +261,8 @@ function initTableActions(openEditModal, openDeleteModal) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
+  initAuthGuard();
   loadVisitors();
   initToggle();
   initForm();

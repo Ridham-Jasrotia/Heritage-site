@@ -12,13 +12,24 @@ const API_BASE = (window.location.protocol === "file:" || window.location.port =
 // Internal helper
 // ---------------------------------------------------------------------------
 async function request(method, path, body = null) {
-  const options = {
-    method,
-    headers: { "Content-Type": "application/json" },
-  };
+  const headers = { "Content-Type": "application/json" };
+  const token = localStorage.getItem("token");
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+  }
+
+  const options = { method, headers };
   if (body) options.body = JSON.stringify(body);
 
   const res = await fetch(`${API_BASE}${path}`, options);
+
+  if (res.status === 401) {
+    localStorage.removeItem("token");
+    localStorage.removeItem("username");
+    const isPagesFolder = window.location.pathname.includes("/pages/");
+    window.location.href = isPagesFolder ? "login.html" : "pages/login.html";
+    throw new Error("Session expired. Please log in again.");
+  }
 
   if (!res.ok) {
     const err = await res.json().catch(() => ({ detail: res.statusText }));

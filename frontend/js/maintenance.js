@@ -4,10 +4,8 @@
  */
 
 import { maintenanceApi, sitesApi, showToast } from "./api.js";
+import { initAuthGuard } from "./auth.js";
 
-// ---------------------------------------------------------------------------
-// Badge maps (unchanged)
-// ---------------------------------------------------------------------------
 const STATUS_BADGE = {
   "Pending":     "badge-warning",
   "In Progress": "badge-info",
@@ -20,9 +18,6 @@ const PRIORITY_BADGE = {
   "High":   "badge-danger",
 };
 
-// ---------------------------------------------------------------------------
-// Table loader — now renders Edit + Delete buttons using real record.id
-// ---------------------------------------------------------------------------
 async function loadMaintenance() {
   const tbody = document.getElementById("maintenance-body");
   try {
@@ -38,12 +33,11 @@ async function loadMaintenance() {
       const sBadge = STATUS_BADGE[rec.status]     || "badge-info";
       const pBadge = PRIORITY_BADGE[rec.priority] || "badge-info";
       const tr = document.createElement("tr");
-      // Store the record as JSON on the row so edit/delete handlers can read it
       tr.dataset.record = JSON.stringify(rec);
       tr.innerHTML = `
         <td>${rec.id}</td>
-        <td>${rec.title}</td>
-        <td>${rec.site_id}</td>
+        <td><strong>${rec.title}</strong></td>
+        <td>Site #${rec.site_id}</td>
         <td><span class="badge ${sBadge}">${rec.status}</span></td>
         <td><span class="badge ${pBadge}">${rec.priority}</span></td>
         <td>${rec.scheduled_date ?? "—"}</td>
@@ -57,14 +51,13 @@ async function loadMaintenance() {
       tbody.appendChild(tr);
     });
   } catch (err) {
-    showToast("Failed to load maintenance records.", "error");
+    if (!err.message.includes("Session expired")) {
+      showToast("Failed to load maintenance records.", "error");
+    }
     console.error(err);
   }
 }
 
-// ---------------------------------------------------------------------------
-// Populate the Heritage Site dropdown in the Add form
-// ---------------------------------------------------------------------------
 async function populateSiteDropdown(selectId) {
   const select = document.getElementById(selectId);
   try {
@@ -73,7 +66,7 @@ async function populateSiteDropdown(selectId) {
     sites.forEach(site => {
       const opt = document.createElement("option");
       opt.value = site.id;
-      opt.textContent = site.name;
+      opt.textContent = `${site.name} (${site.location})`;
       select.appendChild(opt);
     });
   } catch (err) {
@@ -82,9 +75,6 @@ async function populateSiteDropdown(selectId) {
   }
 }
 
-// ---------------------------------------------------------------------------
-// Add form toggle (unchanged)
-// ---------------------------------------------------------------------------
 function initToggle() {
   const toggleBtn = document.getElementById("btn-toggle-maintenance-form");
   const cancelBtn = document.getElementById("btn-cancel-maintenance");
@@ -110,9 +100,6 @@ function initToggle() {
   cancelBtn.addEventListener("click", closeForm);
 }
 
-// ---------------------------------------------------------------------------
-// Add form submission (unchanged)
-// ---------------------------------------------------------------------------
 function initForm() {
   const form = document.getElementById("add-maintenance-form");
 
@@ -145,10 +132,12 @@ function initForm() {
       showToast("Maintenance record added successfully!", "success");
       form.reset();
       document.getElementById("maintenance-form-panel").style.display = "none";
-      document.getElementById("btn-toggle-maintenance-form").textContent = "➕ Add Maintenance Record";
+      document.getElementById("btn-toggle-maintenance-form").textContent = "Add Maintenance Record";
       await loadMaintenance();
     } catch (err) {
-      showToast(`Error: ${err.message}`, "error");
+      if (!err.message.includes("Session expired")) {
+        showToast(`Error: ${err.message}`, "error");
+      }
     } finally {
       submitBtn.disabled = false;
       submitBtn.textContent = "Save Record";
@@ -156,9 +145,6 @@ function initForm() {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Edit modal
-// ---------------------------------------------------------------------------
 function initEditModal() {
   const modal      = document.getElementById("m-edit-modal");
   const form       = document.getElementById("edit-maintenance-form");
@@ -168,7 +154,6 @@ function initEditModal() {
 
   function openModal(rec) {
     activeId = rec.id;
-    // Populate form with exact MaintenanceUpdate field names
     form.title.value          = rec.title          ?? "";
     form.status.value         = rec.status         ?? "Pending";
     form.priority.value       = rec.priority       ?? "Medium";
@@ -196,7 +181,6 @@ function initEditModal() {
     submitBtn.disabled = true;
     submitBtn.textContent = "Saving…";
 
-    // Build PATCH payload using exact MaintenanceUpdate field names
     const scheduledRaw  = form.scheduled_date.value;
     const completedRaw  = form.completed_date.value;
 
@@ -222,13 +206,9 @@ function initEditModal() {
     }
   });
 
-  // Return openModal so the table can call it
   return openModal;
 }
 
-// ---------------------------------------------------------------------------
-// Delete modal
-// ---------------------------------------------------------------------------
 function initDeleteModal() {
   const modal      = document.getElementById("m-delete-modal");
   const msgEl      = document.getElementById("m-delete-modal-msg");
@@ -238,7 +218,7 @@ function initDeleteModal() {
 
   function openModal(id, title) {
     activeId = id;
-    msgEl.textContent = `Record "${title}" will be permanently deleted. This cannot be undone.`;
+    msgEl.textContent = `Record "${title}" will be permanently deleted. This action cannot be undone.`;
     modal.style.display = "flex";
   }
 
@@ -270,9 +250,6 @@ function initDeleteModal() {
   return openModal;
 }
 
-// ---------------------------------------------------------------------------
-// Wire edit/delete button clicks via event delegation on tbody
-// ---------------------------------------------------------------------------
 function initTableActions(openEditModal, openDeleteModal) {
   const tbody = document.getElementById("maintenance-body");
 
@@ -294,10 +271,8 @@ function initTableActions(openEditModal, openDeleteModal) {
   });
 }
 
-// ---------------------------------------------------------------------------
-// Init
-// ---------------------------------------------------------------------------
 document.addEventListener("DOMContentLoaded", () => {
+  initAuthGuard();
   loadMaintenance();
   initToggle();
   initForm();

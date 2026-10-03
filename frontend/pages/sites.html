@@ -8,13 +8,18 @@
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="../css/global.css?v=2" />
-  <link rel="stylesheet" href="../css/sites.css?v=2" />
+  <link rel="stylesheet" href="../css/global.css?v=3" />
+  <link rel="stylesheet" href="../css/sites.css?v=3" />
 </head>
 <body>
   <nav class="sidebar">
     <div class="sidebar-header">
       <div class="logo">
+        <svg class="logo-icon-svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#b5922a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 21h18"></path>
+          <path d="M5 21V10l7-5 7 5v11"></path>
+          <path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"></path>
+        </svg>
         <span class="logo-text">HeritageMS</span>
       </div>
     </div>
@@ -25,42 +30,58 @@
       <li><a href="maintenance.html"   class="nav-link"        id="nav-maintenance">Maintenance</a></li>
       <li><a href="visitors.html"      class="nav-link"        id="nav-visitors">Visitors</a></li>
     </ul>
+    <div class="sidebar-footer">
+      <button id="nav-logout-btn" class="nav-logout-btn" type="button" title="Sign Out">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+          <polyline points="16 17 21 12 16 7"></polyline>
+          <line x1="21" y1="12" x2="9" y2="12"></line>
+        </svg>
+        <span>Sign Out</span>
+      </button>
+    </div>
   </nav>
 
   <main class="main-content">
     <header class="page-header">
-      <h1 class="page-title">Heritage Sites</h1>
-      <p class="page-subtitle">Browse and manage all registered heritage sites.</p>
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:16px;">
+        <div>
+          <h1 class="page-title">Heritage Sites</h1>
+          <p class="page-subtitle">Browse and manage all registered heritage sites.</p>
+        </div>
+        <a href="add-site.html" class="btn btn-primary" id="btn-add-site">Add New Site</a>
+      </div>
     </header>
-    <div class="section-header" style="margin-bottom:16px;">
-      <span></span>
-      <a href="add-site.html" class="btn btn-primary" id="btn-add-site">Add New Site</a>
-    </div>
 
     <!-- Search & Filter Bar -->
     <div class="sites-filter-bar" id="sites-filter-bar">
       <div class="filter-search-wrap">
-        <span class="filter-search-icon">🔍</span>
+        <span class="filter-search-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+        </span>
         <input
           class="filter-search-input"
           type="search"
           id="site-search"
-          placeholder="Search heritage sites…"
-          aria-label="Search heritage sites by name, location or category"
+          placeholder="Search heritage sites by name, location or category…"
+          aria-label="Search heritage sites"
           autocomplete="off"
         />
       </div>
       <select class="filter-select" id="site-category-filter" aria-label="Filter by category">
         <option value="">All Categories</option>
       </select>
-      <button class="btn btn-outline filter-clear-btn" id="site-filter-clear" type="button" style="display:none;">✕ Clear</button>
+      <button class="btn btn-outline filter-clear-btn" id="site-filter-clear" type="button" style="display:none;">Clear Filters</button>
     </div>
 
     <!-- Results count -->
     <p class="filter-results-count" id="sites-results-count"></p>
 
     <div class="site-grid" id="sites-grid">
-      <p class="loading-cell">Loading…</p>
+      <p class="loading-cell">Loading sites…</p>
     </div>
   </main>
 

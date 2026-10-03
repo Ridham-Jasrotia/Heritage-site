@@ -9,7 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 
 from app.core.database import Base, engine
-from app.api.routes import heritage_sites, maintenance, visitors
+from app.api.routes import heritage_sites, maintenance, visitors, auth
 
 # Create all database tables on startup
 Base.metadata.create_all(bind=engine)
@@ -34,6 +34,7 @@ app.add_middleware(
 # ---------------------------------------------------------------------------
 # Routers
 # ---------------------------------------------------------------------------
+app.include_router(auth.router,           prefix="/api/auth",         tags=["Authentication"])
 app.include_router(heritage_sites.router, prefix="/api/sites",       tags=["Heritage Sites"])
 app.include_router(maintenance.router,    prefix="/api/maintenance",  tags=["Maintenance"])
 app.include_router(visitors.router,       prefix="/api/visitors",     tags=["Visitors"])
