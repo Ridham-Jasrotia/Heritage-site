@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="View heritage site details, maintenance and visitor records." />
+  <title>Site Details | Heritage Site Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/global.css?v=2" />
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-text">HeritageMS</span>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="../index.html"    class="nav-link">Dashboard</a></li>
+      <li><a href="sites.html"       class="nav-link active">Heritage Sites</a></li>
+      <li><a href="add-site.html"    class="nav-link">Add Site</a></li>
+      <li><a href="maintenance.html" class="nav-link">Maintenance</a></li>
+      <li><a href="visitors.html"    class="nav-link">Visitors</a></li>
+    </ul>
+  </nav>
+
+  <main class="main-content">
+    <header class="page-header" id="site-header">
+      <div style="display:flex;align-items:flex-start;justify-content:space-between;gap:16px;flex-wrap:wrap;">
+        <div>
+          <h1 class="page-title" id="detail-name">Loading…</h1>
+          <p class="page-subtitle" id="detail-location"></p>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;padding-top:4px;">
+          <button class="btn btn-outline" id="btn-edit-site" type="button">Edit Site</button>
+          <button class="btn btn-danger"  id="btn-delete-site" type="button">Delete Site</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- Edit Site Form Panel (hidden by default) -->
+    <div class="section-card" id="edit-form-panel" style="display:none;margin-bottom:16px;">
+      <h2 class="section-title" style="margin-bottom:16px;">Edit Site Details</h2>
+      <form id="edit-site-form" novalidate>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+
+          <div class="form-group">
+            <label class="form-label" for="e-name">Site Name *</label>
+            <input class="form-input" type="text" id="e-name" name="name" required placeholder="Site name" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="e-location">Location *</label>
+            <input class="form-input" type="text" id="e-location" name="location" required placeholder="City, Country" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="e-category">Category *</label>
+            <select class="form-select" id="e-category" name="category" required>
+              <option value="">— Select —</option>
+              <option value="UNESCO World Heritage">UNESCO World Heritage</option>
+              <option value="National Heritage">National Heritage</option>
+              <option value="State Heritage">State Heritage</option>
+              <option value="Archaeological">Archaeological</option>
+              <option value="Natural Heritage">Natural Heritage</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="e-year">Year Established</label>
+            <input class="form-input" type="number" id="e-year" name="year_established" min="0" max="2100" placeholder="e.g. 1632" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="e-latitude">Latitude</label>
+            <input class="form-input" type="number" id="e-latitude" name="latitude" step="any" placeholder="e.g. 27.1751" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="e-longitude">Longitude</label>
+            <input class="form-input" type="number" id="e-longitude" name="longitude" step="any" placeholder="e.g. 78.0421" />
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="e-image-url">Image URL</label>
+            <input class="form-input" type="url" id="e-image-url" name="image_url" placeholder="https://…" />
+          </div>
+
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label" for="e-description">Description</label>
+            <textarea class="form-textarea" id="e-description" name="description" style="min-height:80px;" placeholder="Brief description…"></textarea>
+          </div>
+
+          <div class="form-group" style="grid-column:1/-1;">
+            <label class="form-label" for="e-significance">Significance</label>
+            <textarea class="form-textarea" id="e-significance" name="significance" style="min-height:80px;" placeholder="Historical or cultural significance…"></textarea>
+          </div>
+
+        </div>
+        <div style="display:flex;gap:12px;margin-top:8px;">
+          <button type="submit" class="btn btn-primary" id="e-submit-btn">Save Changes</button>
+          <button type="button" class="btn btn-outline" id="btn-cancel-edit">Cancel</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- Site Info -->
+    <div class="section-card" id="site-info-card">
+      <div class="section-header">
+        <h2 class="section-title">Site Information</h2>
+        <span class="badge badge-info" id="detail-category">—</span>
+      </div>
+      <p id="detail-description" style="color:var(--color-text-muted);font-size:0.9rem;line-height:1.7;">—</p>
+      <div style="margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+        <div><span style="font-size:0.75rem;color:var(--color-text-muted);">YEAR ESTABLISHED</span><p id="detail-year" style="font-weight:600;">—</p></div>
+        <div><span style="font-size:0.75rem;color:var(--color-text-muted);">SIGNIFICANCE</span><p id="detail-significance" style="font-size:0.875rem;">—</p></div>
+      </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div id="delete-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.65);z-index:1000;align-items:center;justify-content:center;">
+      <div style="background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-md);padding:var(--space-xl);max-width:440px;width:90%;text-align:center;">
+
+        <h3 style="font-size:1.1rem;font-weight:600;margin-bottom:8px;">Delete Heritage Site?</h3>
+        <p id="delete-modal-msg" style="color:var(--color-text-muted);font-size:0.9rem;margin-bottom:24px;">This action cannot be undone.</p>
+        <div style="display:flex;gap:12px;justify-content:center;">
+          <button class="btn btn-danger"  id="btn-confirm-delete" type="button">Yes, Delete</button>
+          <button class="btn btn-outline" id="btn-cancel-delete"  type="button">Cancel</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Maintenance Records for this site -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">Maintenance Records</h2>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table" id="site-maintenance-table" aria-label="Maintenance records for this site">
+          <thead><tr><th>#</th><th>Title</th><th>Status</th><th>Priority</th><th>Scheduled</th></tr></thead>
+          <tbody id="site-maintenance-body">
+            <tr><td colspan="5" class="loading-cell">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Visitor Records for this site -->
+    <div class="section-card">
+      <div class="section-header">
+        <h2 class="section-title">Visitor Records</h2>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table" id="site-visitors-table" aria-label="Visitor records for this site">
+          <thead><tr><th>#</th><th>Date</th><th>Visitors</th><th>Type</th></tr></thead>
+          <tbody id="site-visitors-body">
+            <tr><td colspan="4" class="loading-cell">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <script type="module" src="../js/site-detail.js"></script>
+</body>
+</html>

@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Add a new heritage site to the management system." />
+  <title>Add Site | Heritage Site Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="../css/global.css?v=2" />
+  <link rel="stylesheet" href="../css/forms.css?v=2" />
+</head>
+<body>
+  <nav class="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-text">HeritageMS</span>
+      </div>
+    </div>
+    <ul class="nav-links">
+      <li><a href="../index.html"    class="nav-link"       >Dashboard</a></li>
+      <li><a href="sites.html"       class="nav-link"       >Heritage Sites</a></li>
+      <li><a href="add-site.html"    class="nav-link active">Add Site</a></li>
+      <li><a href="maintenance.html" class="nav-link"       >Maintenance</a></li>
+      <li><a href="visitors.html"    class="nav-link"       >Visitors</a></li>
+    </ul>
+  </nav>
+
+  <main class="main-content">
+    <header class="page-header">
+      <h1 class="page-title">Add Heritage Site</h1>
+      <p class="page-subtitle">Register a new heritage site in the system.</p>
+    </header>
+
+    <div class="section-card form-container">
+      <form id="add-site-form" novalidate>
+        <div class="form-grid">
+          <div class="form-group">
+            <label class="form-label" for="site-name">Site Name *</label>
+            <input class="form-input" type="text" id="site-name" name="name" required placeholder="e.g. Taj Mahal" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="site-location">Location *</label>
+            <input class="form-input" type="text" id="site-location" name="location" required placeholder="e.g. Agra, India" />
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="site-category">Category *</label>
+            <select class="form-select" id="site-category" name="category" required>
+              <option value="">— Select —</option>
+              <option value="UNESCO World Heritage">UNESCO World Heritage</option>
+              <option value="National Heritage">National Heritage</option>
+              <option value="State Heritage">State Heritage</option>
+              <option value="Archaeological">Archaeological</option>
+              <option value="Natural Heritage">Natural Heritage</option>
+              <option value="Other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label class="form-label" for="site-year">Year Established</label>
+            <input class="form-input" type="number" id="site-year" name="year_established" placeholder="e.g. 1632" min="0" max="2100" />
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="site-description">Description</label>
+            <textarea class="form-textarea" id="site-description" name="description" placeholder="Brief description of the site…"></textarea>
+          </div>
+          <div class="form-group full-width">
+            <label class="form-label" for="site-significance">Significance</label>
+            <textarea class="form-textarea" id="site-significance" name="significance" placeholder="Historical or cultural significance…"></textarea>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-primary" id="submit-btn">Add Site</button>
+          <a href="sites.html" class="btn btn-outline">Cancel</a>
+        </div>
+      </form>
+    </div>
+  </main>
+
+  <script type="module" src="../js/add-site.js"></script>
+</body>
+</html>

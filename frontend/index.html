@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Heritage Site Management System — manage, monitor and preserve heritage sites." />
+  <title>Heritage Site Management System</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="css/global.css?v=2" />
+  <link rel="stylesheet" href="css/dashboard.css?v=2" />
+</head>
+<body>
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      <div class="logo">
+        <span class="logo-text">HeritageMS</span>
+      </div>
+    </div>
+    <ul class="nav-links" role="navigation" aria-label="Main navigation">
+      <li><a href="index.html"             class="nav-link active"  id="nav-dashboard">Dashboard</a></li>
+      <li><a href="pages/sites.html"       class="nav-link"         id="nav-sites">Heritage Sites</a></li>
+      <li><a href="pages/add-site.html"    class="nav-link"         id="nav-add-site">Add Site</a></li>
+      <li><a href="pages/maintenance.html" class="nav-link"         id="nav-maintenance">Maintenance</a></li>
+      <li><a href="pages/visitors.html"    class="nav-link"         id="nav-visitors">Visitors</a></li>
+    </ul>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="main-content" id="main-content">
+    <header class="page-header">
+      <h1 class="page-title">Dashboard</h1>
+      <p class="page-subtitle">Heritage Site Management System Overview</p>
+    </header>
+
+    <!-- Stats Cards -->
+    <section class="stats-grid" id="stats-grid" aria-label="Summary statistics">
+      <div class="stat-card" id="stat-total-sites">
+        <div class="stat-info">
+          <span class="stat-value" id="stat-sites-count">—</span>
+          <span class="stat-label">Total Sites</span>
+        </div>
+      </div>
+      <div class="stat-card" id="stat-maintenance">
+        <div class="stat-info">
+          <span class="stat-value" id="stat-maintenance-count">—</span>
+          <span class="stat-label">Maintenance Records</span>
+        </div>
+      </div>
+      <div class="stat-card" id="stat-visitors">
+        <div class="stat-info">
+          <span class="stat-value" id="stat-visitors-count">—</span>
+          <span class="stat-label">Visitor Records</span>
+        </div>
+      </div>
+      <div class="stat-card" id="stat-pending">
+        <div class="stat-info">
+          <span class="stat-value" id="stat-pending-count">—</span>
+          <span class="stat-label">Pending Maintenance</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Recent Sites -->
+    <section class="section-card" id="recent-sites-section">
+      <div class="section-header">
+        <h2 class="section-title">Recent Heritage Sites</h2>
+        <a href="pages/sites.html" class="btn btn-outline">View All</a>
+      </div>
+      <div class="table-wrapper">
+        <table class="data-table" id="recent-sites-table" aria-label="Recent heritage sites">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Name</th>
+              <th>Location</th>
+              <th>Category</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="recent-sites-body">
+            <tr><td colspan="5" class="loading-cell">Loading…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script type="module" src="js/dashboard.js"></script>
+</body>
+</html>
